@@ -1,0 +1,196 @@
+;; MISC. SETUP
+
+(setq inhibit-startup-message t) 
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(menu-bar-mode -1)
+(global-visual-line-mode 1)
+(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+(add-to-list 'default-frame-alist '(ns-appearance . dark))
+(setq frame-resize-pixelwise t)
+(dotimes (n 3)
+  (toggle-frame-maximized))
+
+;; PACKAGE MANAGER
+
+(require 'package)
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+			 ("gnu" . "https://elpa.gnu.org/packages/")
+			 ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+
+(package-initialize)
+(unless package-archive-contents
+(package-refresh-contents)
+(package-install 'org))
+
+(unless (package-installed-p 'use-package)
+(package-install 'use-package))
+
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+(use-package command-log-mode)
+
+;; THEME
+
+;; (use-package modus-themes
+;; :ensure t)
+;; (require 'modus-themes)
+;; (setq modus-themes-common-palette-overrides modus-themes-preset-overrides-faint)
+;; (load-theme 'modus-operandi :no-confirm)
+
+(use-package atom-one-dark-theme
+  :ensure t)
+(load-theme 'atom-one-dark t)
+
+;; FONT & ICONS
+
+(use-package all-the-icons
+  :if (display-graphic-p))
+
+(add-to-list 'default-frame-alist
+             '(font . "Iosevka Nerd Font-14"))
+
+;; DIRED
+
+(use-package all-the-icons-dired
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+;; NOTE MANAGEMENT
+
+;; (use-package denote
+;;   :ensure t
+;;   :custom (denote-directory "~/Documents/notes"))
+
+(use-package org-roam
+  :ensure t
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n i" . org-roam-node-insert)
+	 ("C-c n j" . org-roam-dailies-goto-today)
+	 ("C-c n p" . org-roam-dailies-goto-yesterday)
+	 ("C-c n t" . org-roam-dailies-goto-tomorrow)))
+
+(setq org-roam-directory (file-truename "~/Documents/notes"))
+(org-roam-db-autosync-mode)
+
+(setq org-roam-dailies-directory "journal/")
+
+(setq org-roam-dailies-capture-templates
+      '(("d" "default" entry
+         "* %?"
+         :target (file+head "%<%Y-%m-%d>.org"
+                            "#+title: %<%Y-%m-%d>\n"))))
+
+
+(set-face-attribute 'org-document-title nil :height 300)
+(set-face-attribute 'org-level-1 nil :height 200)
+(set-face-attribute 'org-level-2 nil :height 150)
+
+
+;; VTERM
+
+(use-package vterm
+  :ensure t)
+
+(defvar vterm-popup-buffer nil)
+
+(setq display-buffer-alist '(("\\*shell" 
+				  (display-buffer-reuse-window display-buffer-same-window))
+				 ("\\*vterm" 
+				  (display-buffer-reuse-window display-buffer-in-side-window)
+				  (side . bottom)
+				  (window-width . 80))))
+
+(defun toggle-vterm-popup ()
+  "Toggle the vterm buffer in the bottom of Emacs."
+  (interactive)
+  (if vterm-popup-buffer
+      (progn
+        (when (get-buffer vterm-popup-buffer)
+          (kill-buffer vterm-popup-buffer))
+        (setq vterm-popup-buffer nil))
+    (setq vterm-popup-buffer (vterm "*vterm*"))
+    (with-current-buffer vterm-popup-buffer
+      (setq vterm-kill-buffer-on-exit t))))
+
+(global-set-key (kbd "C-,") 'toggle-vterm-popup)
+
+;; MODELINE
+
+(setq-default mode-line-format
+	      '("%e"
+		(:eval (format "%s" (buffer-name)))
+		
+		" | "
+		
+		(:eval (format "%s" (symbol-name major-mode)))
+		))
+
+
+
+;; VERTICO AND ORDERLESS (FUZZY SEARCH)
+
+(use-package vertico
+:ensure t
+:init
+(vertico-mode))
+
+(use-package orderless
+:ensure t
+:custom
+(completion-styles '(orderless basic))
+(completion-category-overrides '((file (styles basic partial-completion)))))
+
+(setq isearch-lazy-count t)
+
+;; WHICH KEY
+
+(use-package which-key
+:ensure t
+:config
+(which-key-mode))
+
+;; LSP
+
+;; (use-package eglot
+;;   :ensure t)
+
+(use-package flycheck
+  :ensure t
+  :init (global-flycheck-mode))
+
+(use-package lsp-mode
+  :init
+  (setq lsp-keymap-prefix "C-c l")
+  :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
+         (c-mode . lsp)
+         ;; if you want which-key integration
+         (lsp-mode . lsp-enable-which-key-integration))
+  :commands lsp)
+
+(use-package lsp-pyright
+  :ensure t
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-pyright)
+                          (lsp))))  ; or lsp-deferred
+
+(use-package lsp-ui
+  :commands lsp-ui-mode)
+
+
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(nil nil t)
+ '(package-selected-packages
+   '(org-roam denote treemacs-icons-dired orderless vertico modus-themes command-log-mode)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
